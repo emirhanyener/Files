@@ -78,36 +78,30 @@ namespace Files.Uwp.Views
             ToggleFullScreenAcceleratorCommand = new RelayCommand<KeyboardAcceleratorInvokedEventArgs>(ToggleFullScreenAccelerator);
             ToggleCompactOverlayCommand = new RelayCommand(ToggleCompactOverlay);
             SetCompactOverlayCommand = new RelayCommand<bool>(SetCompactOverlay);
+       
+            PromptForReview();
 
-            if (SystemInformation.Instance.TotalLaunchCount >= 15 & Package.Current.Id.Name == "49306atecsolution.FilesUWP" && !UserSettingsService.ApplicationSettingsService.WasPromptedToReview)
-            {
-                PromptForReview();
-                UserSettingsService.ApplicationSettingsService.WasPromptedToReview = true;
-            }
 
             UserSettingsService.OnSettingChangedEvent += UserSettingsService_OnSettingChangedEvent;
         }
 
         private async void PromptForReview()
         {
-            var AskForReviewDialog = new ContentDialog
+            AppInstallerInfo info = Windows.ApplicationModel.Package.Current.GetAppInstallerInfo();
+            if (info != null)
             {
-                Title = "ReviewFiles".ToLocalized(),
-                Content = "ReviewFilesContent".ToLocalized(),
-                PrimaryButtonText = "Yes".ToLocalized(),
-                SecondaryButtonText = "No".ToLocalized()
-        };
+                // Uri that was used to install the app.
+                Uri appInstallerUri = info.Uri;
 
-            var result = await AskForReviewDialog.ShowAsync();
-
-            if (result == ContentDialogResult.Primary)
-            {
-                try
+                var AskForReviewDialog = new ContentDialog
                 {
-                    var storeContext = StoreContext.GetDefault();
-                    await storeContext.RequestRateAndReviewAppAsync();
-                }
-                catch (Exception) { }
+                    Title = "ReviewFiles".ToLocalized(),
+                    Content = Convert.ToString(appInstallerUri),
+                    PrimaryButtonText = "Yes".ToLocalized(),
+                    SecondaryButtonText = "No".ToLocalized()
+                };
+
+                var result = await AskForReviewDialog.ShowAsync();
             }
         }
 
