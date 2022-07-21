@@ -10,22 +10,22 @@ parameters:
     type: string
     default: 'preview'
     values:
-    - 'preview'
-    - 'stable'
+    - 'URI'
+    - 'URI'
   - name: packageIdentityName
     displayName: Package Identity Name
     type: string
-    default: 'FilesPreview'
+    default: 'URI'
     values:
-    - 'FilesPreview'
-    - 'Files'
+    - 'URI'
+    - 'URI'
   - name: packageDisplayName
     displayName: Package Display Name
     type: string
-    default: 'Files (Preview)'
+    default: 'URI'
     values:
-    - 'Files (Preview)'
-    - 'Files'
+    - 'URI'
+    - 'URI'
 
 variables:
 - group: BuildPipelineVariables
@@ -51,7 +51,7 @@ jobs:
       script: |
         [xml]$xmlDoc = Get-Content $(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest
         $xmlDoc.Package.Identity.Name="${{parameters.packageIdentityName}}"
-        $xmlDoc.Package.Identity.Publisher="Files"
+        $xmlDoc.Package.Identity.Publisher="URI"
         $xmlDoc.Package.Properties.DisplayName="${{parameters.packageDisplayName}}"
         $xmlDoc.Package.Applications.Application.VisualElements.DisplayName="${{parameters.packageDisplayName}}"
         $xmlDoc.Save('$(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest')
@@ -120,7 +120,7 @@ jobs:
       solution: '**/*.wapproj'
       platform: 'x86'
       configuration: '$(sideloadBuildConfiguration)'
-      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/${{parameters.releaseBranch}}/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
+      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/${{parameters.releaseBranch}}?cid=prototype/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
       maximumCpuCount: true
 
   - task: CopyFiles@2
@@ -145,114 +145,3 @@ jobs:
       storage: 'filescommunity'
       ContainerName: 'files'
       BlobPrefix: '${{parameters.releaseBranch}}'
-
-### Store release ###
-- job: StoreRelease
-  timeoutInMinutes: 120
-
-  steps:
-  - task: PowerShell@2
-    inputs:
-      targetType: 'inline'
-      script: |
-        [xml]$xmlDoc = Get-Content $(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest
-        $xmlDoc.Package.Identity.Name="49306atecsolution.FilesUWP"
-        $xmlDoc.Package.Identity.Publisher="CN=53EC4384-7F5B-4CF6-8C23-513FFE9D1AB7"
-        $xmlDoc.Package.Properties.DisplayName="Files"
-        $xmlDoc.Package.Applications.Application.VisualElements.DisplayName="Files"
-
-        # Removes packageManagement from Store release
-        $nsmgr = New-Object System.Xml.XmlNamespaceManager($xmlDoc.NameTable)
-        $nsmgr.AddNamespace("pkg", "http://schemas.microsoft.com/appx/manifest/foundation/windows10")
-        $nsmgr.AddNamespace("rescap", "http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities")
-        $pm = $xmlDoc.SelectSingleNode("/pkg:Package/pkg:Capabilities/rescap:Capability[@Name='packageManagement']", $nsmgr)
-        $xmlDoc.Package.Capabilities.RemoveChild($pm)
-
-        $xmlDoc.Save('$(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest')
-      failOnStderr: true
-
- # This replaces references to the dev icon with the regular release icon 
-  - task: PowerShell@2
-    displayName: 'Use Release Logo'
-    inputs:
-      targetType: 'inline'
-      script: |
-        gci $(Build.SourcesDirectory)\src -Include *.csproj, *.appxmanifest, *.wapproj -recurse | ForEach -Process {
-        (Get-Content $_ -Raw | ForEach -Process {$_ -replace "Assets\\AppTilesDev", "Assets\AppTiles"}) | Set-Content $_ -NoNewline
-        }
-      failOnStderr: true
-
-# Adds the Bing maps token to the project
-  - task: DownloadSecureFile@1
-    name: mapsDevKey
-    displayName: 'Download Bing Maps Dev Key'
-    inputs:
-      secureFile: 'BingMapsKey.txt'
-
-  - task: CopyFiles@2
-    inputs:
-      SourceFolder: '$(Agent.TempDirectory)'
-      Contents: '$(mapsDevKey.secureFilePath)'
-      TargetFolder: '$(Build.SourcesDirectory)\src\Files.Uwp\Resources'
-      overWrite: true
-
-# Adds the AppCenter token to the project
-  - task: DownloadSecureFile@1
-    name: appCenterDevKey
-    displayName: 'Download AppCenter Dev Key'
-    inputs:
-      secureFile: 'AppCenterKey.txt'
-
-  - task: CopyFiles@2
-    inputs:
-      SourceFolder: '$(Agent.TempDirectory)'
-      Contents: '$(appCenterDevKey.secureFilePath)'
-      TargetFolder: '$(Build.SourcesDirectory)\src\Files.Uwp\Resources'
-      overWrite: true
-
-  - task: UseDotNet@2
-    inputs:
-      packageType: sdk
-      version: 6.0.100
-
-  - task: NuGetToolInstaller@1
-
-  - task: NuGetCommand@2
-    inputs:
-      feedsToUse: config
-      nugetConfigPath: nuget.config
-      restoreSolution: '$(solution)'
-
-  - task: MSBuild@1
-    inputs:
-      solution: '**/*.wapproj'
-      platform: 'x86'
-      configuration: '$(buildConfiguration)'
-      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=StoreUpload'
-      maximumCpuCount: true
-    
-  - task: CopyFiles@2
-    displayName: 'Copy Files to: $(build.artifactstagingdirectory)'
-    inputs:
-      SourceFolder: '$(system.defaultworkingdirectory)'
-      Contents: '**\bin\$(BuildConfiguration)\**'
-      TargetFolder: '$(build.artifactstagingdirectory)'
-
-  - task: PublishBuildArtifacts@1
-    displayName: 'Publish Artifact: Store'
-    inputs:
-      PathtoPublish: '$(build.artifactstagingdirectory)'
-      ArtifactName: 'Store'
-      publishLocation: 'Container'
-
-  - task: store-flight@0
-    inputs:
-      serviceEndpoint: 'Files'
-      appId: '9NGHP3DX8HDX'
-      flightName: 'Files - Preview'
-      packagePath: '$(appxPackageDir)\**\*.msixupload'
-      force: false
-      skipPolling: false
-      deletePackages: true
-      numberOfPackagesToKeep: '5'
-      isMandatoryUpdate: true
