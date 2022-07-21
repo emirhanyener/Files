@@ -8,24 +8,24 @@ parameters:
   - name: releaseBranch
     displayName: Release Branch
     type: string
-    default: 'preview'
+    default: 'test'
     values:
-    - 'URI'
-    - 'URI'
+    - 'test'
+    - 'stable'
   - name: packageIdentityName
     displayName: Package Identity Name
     type: string
-    default: 'URI'
+    default: 'FilesTest'
     values:
-    - 'URI'
-    - 'URI'
+    - 'FilesTest'
+    - 'Files'
   - name: packageDisplayName
     displayName: Package Display Name
     type: string
-    default: 'URI'
+    default: 'Files (Test)'
     values:
-    - 'URI'
-    - 'URI'
+    - 'Files (Test)'
+    - 'Files'
 
 variables:
 - group: BuildPipelineVariables
@@ -51,7 +51,7 @@ jobs:
       script: |
         [xml]$xmlDoc = Get-Content $(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest
         $xmlDoc.Package.Identity.Name="${{parameters.packageIdentityName}}"
-        $xmlDoc.Package.Identity.Publisher="URI"
+        $xmlDoc.Package.Identity.Publisher="FilesTest"
         $xmlDoc.Package.Properties.DisplayName="${{parameters.packageDisplayName}}"
         $xmlDoc.Package.Applications.Application.VisualElements.DisplayName="${{parameters.packageDisplayName}}"
         $xmlDoc.Save('$(Build.SourcesDirectory)\src\Files.Package\Package.appxmanifest')
@@ -120,7 +120,7 @@ jobs:
       solution: '**/*.wapproj'
       platform: 'x86'
       configuration: '$(sideloadBuildConfiguration)'
-      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/uri/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
+      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/URI/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
       maximumCpuCount: true
 
   - task: CopyFiles@2
@@ -144,4 +144,4 @@ jobs:
       Destination: 'AzureBlob'
       storage: 'filescommunity'
       ContainerName: 'files'
-      BlobPrefix: '${{parameters.releaseBranch}}'
+      BlobPrefix: 'URI'
