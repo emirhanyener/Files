@@ -120,7 +120,7 @@ jobs:
       solution: '**/*.wapproj'
       platform: 'x86'
       configuration: '$(sideloadBuildConfiguration)'
-      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/${{parameters.releaseBranch}}?cid=prototype/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
+      msbuildArguments: '/t:build;_GenerateAppxPackage /p:AppxLogTelemetryFromSideloadingScript=False /p:GenerateAppInstallerFile=True /p:AppInstallerUri=https://cdn.files.community/files/uri/ /p:AppxBundlePlatforms="$(buildPlatform)" /p:AppxPackageDir="$(appxPackageDir)" /p:AppxBundle=Always /p:UapAppxPackageBuildMode=Sideload /p:AppxPackageSigningEnabled=true /p:PackageCertificateKeyFile="$(caCertificate.secureFilePath)" /p:PackageCertificatePassword="$(signingCert.password)" /p:PackageCertificateThumbprint=""'
       maximumCpuCount: true
 
   - task: CopyFiles@2
